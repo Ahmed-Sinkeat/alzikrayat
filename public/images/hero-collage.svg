@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 500" role="img" aria-labelledby="title description">
+  <title id="title">Framed photograph collection</title>
+  <desc id="description">Three overlapping picture frames with mountains, a sunset, and a plant.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bfdbfe"/>
+      <stop offset="1" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="sunset" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fdba74"/>
+      <stop offset="1" stop-color="#fef3c7"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#14532d" flood-opacity=".15"/>
+    </filter>
+  </defs>
+  <path d="M73 337C27 268 64 158 142 116c88-48 138 23 226-8 82-28 159-80 231-24 89 69 98 247 18 325-61 60-164 20-246 34-114 19-238-18-298-106Z" fill="#dcfce7"/>
+  <g transform="translate(77 95) rotate(-8 170 130)" filter="url(#shadow)">
+    <rect width="338" height="262" rx="22" fill="#fff"/>
+    <rect x="18" y="18" width="302" height="202" rx="13" fill="url(#sky)"/>
+    <circle cx="257" cy="67" r="29" fill="#f59e0b" opacity=".85"/>
+    <path d="m18 185 77-70 58 51 46-37 121 91H18Z" fill="#15803d"/>
+    <path d="m18 202 92-58 64 51 48-32 98 57H18Z" fill="#166534"/>
+    <rect x="92" y="234" width="154" height="9" rx="4.5" fill="#dce9df"/>
+  </g>
+  <g transform="translate(355 171) rotate(9 130 111)" filter="url(#shadow)">
+    <rect width="272" height="229" rx="20" fill="#fff"/>
+    <rect x="17" y="17" width="238" height="169" rx="12" fill="url(#sunset)"/>
+    <circle cx="172" cy="79" r="35" fill="#f59e0b"/>
+    <path d="M17 137c48-22 79-11 113 8 41 23 80 17 125-12v53H17Z" fill="#065f46"/>
+    <path d="M17 157c40-18 79-11 112 7 44 23 83 15 126-10v32H17Z" fill="#064e3b"/>
+    <rect x="73" y="201" width="126" height="8" rx="4" fill="#dce9df"/>
+  </g>
+  <g transform="translate(262 38) rotate(4 95 86)" filter="url(#shadow)">
+    <rect width="195" height="175" rx="18" fill="#fff"/>
+    <rect x="15" y="15" width="165" height="122" rx="11" fill="#ecfccb"/>
+    <path d="M97 127V74" stroke="#166534" stroke-width="7" stroke-linecap="round"/>
+    <path d="M96 89C70 88 56 70 58 50c24-2 41 12 38 39Zm4 12c26-2 42-19 40-40-23-1-41 14-40 40Z" fill="#22c55e"/>
+    <rect x="55" y="151" width="85" height="7" rx="3.5" fill="#dce9df"/>
+  </g>
+</svg>
