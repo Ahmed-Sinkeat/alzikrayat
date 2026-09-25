@@ -4,6 +4,7 @@ Photo sharing web app for the web programming course (Project 1). Users sign up,
 
 Plain PHP + MySQL, no framework. Handwritten MVC with a small regex router.
 
+# how to run 
 ## Quick run (no Apache)
 
 Needs PHP 8 and MySQL/MariaDB running.
@@ -58,3 +59,5 @@ php tests/mysql_integration_test.php   # needs the database
 ```
 
 The architecture report is in `docs/architecture-report.pdf`.
+
+Name: Ahmed Mohammed Omer
