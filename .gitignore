@@ -1,0 +1,11 @@
+public/images/uploads/*
+!public/images/uploads/.gitkeep
+!public/images/uploads/.htaccess
+
+.env
+.env.*
+Project_1_Photo_Sharing_Application_alzikrayat_Specification.pdf
+
+*.log
+.DS_Store
+Thumbs.db
