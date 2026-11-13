@@ -22,7 +22,10 @@ async function getOne(req, res) {
   if (!mongoose.isValidObjectId(req.params.id)) return badId(res);
   const photo = await Photo.findById(req.params.id).populate('userId', OWNER_FIELDS);
   if (!photo) return res.status(404).json({ success: false, message: 'Photo not found' });
-  res.json({ success: true, photo });
+  const comments = await Comment.find({ photoId: photo._id })
+    .sort({ dateTime: 1 })
+    .populate('userId', OWNER_FIELDS);
+  res.json({ success: true, photo, comments });
 }
 
 // POST /api/photos  (multipart: image + title + description)
