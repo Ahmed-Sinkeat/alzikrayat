@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const fs = require('fs');
 
 const schemas = {
   register: Joi.object({
@@ -26,6 +27,7 @@ function validate(name) {
   return (req, res, next) => {
     const { value, error } = schemas[name].validate(req.body || {}, { abortEarly: false, stripUnknown: true });
     if (error) {
+      if (req.file) fs.unlink(req.file.path, () => {}); // don't keep an upload whose metadata is invalid
       return res.status(400).json({
         success: false,
         message: error.details.map((d) => d.message).join(', '),
