@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { errorMessage, imageUrl } from '../api';
 import { useAuth } from '../context/AuthContext';
 import CommentForm from '../components/CommentForm';
@@ -7,6 +7,7 @@ import CommentForm from '../components/CommentForm';
 export default function PhotoDetail() {
   const { id } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [photo, setPhoto] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +24,20 @@ export default function PhotoDetail() {
     return () => controller.abort();
   }, [id]);
 
+  async function remove() {
+    if (!window.confirm('Delete this photo and its comments?')) return;
+    try {
+      await api.delete(`/photos/${photo._id}`);
+      navigate('/gallery');
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   if (loading) return <p>Loading…</p>;
   if (error) return <p className="error">{error} <Link to="/gallery">Back to the gallery</Link></p>;
 
+  const isOwner = user && photo.userId && photo.userId._id === user._id;
   const owner = photo.userId ? `${photo.userId.firstName} ${photo.userId.lastName}` : 'Unknown';
 
   return (
@@ -35,6 +47,7 @@ export default function PhotoDetail() {
       <h1>{photo.title}</h1>
       <p className="meta">by {owner} · {new Date(photo.dateTime).toLocaleString()}</p>
       {photo.description && <p>{photo.description}</p>}
+      {isOwner && <button type="button" className="danger" onClick={remove}>Delete photo</button>}
 
       <section className="comments">
         <h2>Comments ({comments.length})</h2>
