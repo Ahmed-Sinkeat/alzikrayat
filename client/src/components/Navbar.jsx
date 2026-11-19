@@ -12,11 +12,14 @@ export default function Navbar() {
         {user ? (
           <>
             <NavLink to="/upload">Upload</NavLink>
-            <span className="nav-user">{user.firstName}</span>
+            <span className="nav-user">Hi {user.firstName}</span>
             <button type="button" className="link-button" onClick={logout}>Log out</button>
           </>
         ) : (
-          <NavLink to="/login">Log in</NavLink>
+          <>
+            <span className="nav-user">Please Login</span>
+            <NavLink to="/login">Log in</NavLink>
+          </>
         )}
       </nav>
     </header>

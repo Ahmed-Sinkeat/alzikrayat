@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// In development, forward API calls and uploaded images to the Express server
+// In development, forward API calls, uploaded images and the Socket.io connection to the Express server
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:5000',
       '/uploads': 'http://localhost:5000',
+      '/socket.io': { target: 'http://localhost:5000', ws: true },
     },
   },
 });

@@ -3,6 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { errorMessage, imageUrl } from '../api';
 import { useAuth } from '../context/AuthContext';
 import CommentForm from '../components/CommentForm';
+import socket from '../socket';
+
+// append comments that aren't in the list yet (the author gets theirs from the API and the socket)
+const mergeComments = (list, incoming) => [
+  ...list,
+  ...incoming.filter((c) => !list.some((x) => x._id === c._id)),
+];
 
 export default function PhotoDetail() {
   const { id } = useParams();
@@ -17,11 +24,27 @@ export default function PhotoDetail() {
     const controller = new AbortController();
     setLoading(true);
     setError('');
+    setComments([]);
     api.get(`/photos/${id}`, { signal: controller.signal })
-      .then(({ data }) => { setPhoto(data.photo); setComments(data.comments); })
+      // keep any comment that arrived live while this request was in flight
+      .then(({ data }) => { setPhoto(data.photo); setComments((prev) => mergeComments(data.comments, prev)); })
       .catch((err) => { if (!controller.signal.aborted) setError(errorMessage(err)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
+  }, [id]);
+
+  // live comments: join this photo's room, listen for new ones, leave + unsubscribe on unmount
+  useEffect(() => {
+    const join = () => socket.emit('photo:join', id);
+    const onComment = (c) => setComments((prev) => mergeComments(prev, [c]));
+    join();
+    socket.on('connect', join); // rejoin after a reconnect
+    socket.on('comment:new', onComment);
+    return () => {
+      socket.off('connect', join);
+      socket.off('comment:new', onComment);
+      socket.emit('photo:leave', id);
+    };
   }, [id]);
 
   async function remove() {
@@ -62,7 +85,7 @@ export default function PhotoDetail() {
           ))}
         </ul>
         {user ? (
-          <CommentForm photoId={photo._id} onAdded={(c) => setComments([...comments, c])} />
+          <CommentForm photoId={photo._id} onAdded={(c) => setComments((prev) => mergeComments(prev, [c]))} />
         ) : (
           <p><Link to="/login" state={{ from: `/photos/${photo._id}` }}>Log in</Link> to comment.</p>
         )}
