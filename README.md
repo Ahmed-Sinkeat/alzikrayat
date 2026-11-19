@@ -1,11 +1,11 @@
 # Alzikrayat
 
-Photo sharing web app for the Advanced Web Technologies course (Project 3, MERN edition). Users register and log in, upload photos, browse a gallery, comment on photos, and delete their own photos.
+Photo sharing web app for the Advanced Web Technologies course (Project 3, MERN edition, plus the Project 4 bonus: live comments with Socket.io). Users register and log in, upload photos, browse a gallery, comment on photos, and delete their own photos.
 
 | Layer | Tech |
 |---|---|
 | Front end | React 19, React Router, axios, Vite (`/client`) |
-| API | Node.js, Express 5, Joi validation, multer uploads, JWT (`/server`) |
+| API | Node.js, Express 5, Joi validation, multer uploads, JWT, Socket.io (`/server`) |
 | Database | MongoDB (Atlas) through Mongoose |
 
 Everything is hand-written: no Next.js, NestJS, Prisma or admin dashboards.
@@ -27,7 +27,7 @@ npm install
 npm run dev                 # http://localhost:5173
 ```
 
-The Vite dev server proxies `/api` and `/uploads` to the Express API, so no client config is needed.
+The Vite dev server proxies `/api`, `/uploads` and `/socket.io` to the Express API, so no client config is needed.
 
 ### Environment variables (`server/.env`, never committed)
 
@@ -61,7 +61,7 @@ Send the token as `Authorization: Bearer <token>`. Errors are JSON `{ success: f
 
 ## Check
 
-`server/selftest.js` runs the whole API (register, login, upload, comment, ownership on delete) against a database. Use a throwaway one, because it drops that database when done:
+`server/selftest.js` runs the whole API (register, login, upload, comment, live comment over Socket.io, ownership on delete) against a database. Use a throwaway one, because it drops that database when done:
 
 ```bash
 cd server
@@ -71,9 +71,35 @@ TEST_MONGODB_URI=mongodb://127.0.0.1:27017/alzikrayat_test npm run selftest
 ## Project layout
 
 ```
-server/   models/ routes/ controllers/ middleware/ uploads/ app.js server.js
-client/   src/components/ src/pages/ src/context/ src/App.jsx src/main.jsx vite.config.js
+server/   models/ routes/ controllers/ middleware/ uploads/ app.js server.js socket.js
+client/   src/components/ src/pages/ src/context/ src/App.jsx src/main.jsx src/socket.js vite.config.js
 ```
+
+## Project 4 (bonus): Track D, real-time comments
+
+**Selected track:** D, Real-Time WebSocket with [Socket.io](https://socket.io/docs/).
+
+**Why this track:** commenting is the most interactive part of the app. With live updates, people looking at the same photo see each other's comments straight away, without reloading the page. It also fits the existing design cleanly: the REST API stays in charge of writing data (JWT check, Joi validation, MongoDB), and the socket only pushes the result to the people who are viewing that photo.
+
+**How it works**
+
+- The server (`server/socket.js`) runs Socket.io on the same HTTP server and port as Express (`server.js`).
+- Each photo has its own room, `photo:<id>`:
+
+| Event | Direction | Payload | Meaning |
+|---|---|---|---|
+| `photo:join` | client -> server | photo id | start receiving that photo's comments |
+| `photo:leave` | client -> server | photo id | stop receiving them |
+| `comment:new` | server -> room | comment (with author name) | a comment was just posted |
+
+- `POST /api/photos/:id/comments` saves the comment as before, then emits `comment:new` to that photo's room only.
+- In the client, `src/socket.js` holds one shared connection. The photo page (`PhotoDetail.jsx`) joins the room in a `useEffect`, and its cleanup removes the listeners and leaves the room when you navigate away. It also joins again after a reconnect.
+- The author of a comment receives it twice: once in the API response and once from the socket. Comments are matched by `_id`, so it only shows once.
+- The navbar shows "Hi <firstName>" when you are logged in and "Please Login" when you are not.
+
+**Setup:** nothing new to configure. Run `npm install` in `server/` and `client/` (this adds `socket.io` and `socket.io-client`). There are no new environment variables: the socket uses the same `CLIENT_ORIGIN` for CORS. In development, Vite also proxies `/socket.io` (with WebSocket support) to the API.
+
+**Demo:** run both servers and open the same photo in two browser windows, logged in as different users (use a private window for the second one). Post a comment in one window and it appears in the other immediately. Clients viewing a different photo don't receive it. `npm run selftest` checks both cases automatically.
 
 ---
 

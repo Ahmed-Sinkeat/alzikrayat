@@ -11,7 +11,10 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'selftest-secret';
 const uri = process.env.TEST_MONGODB_URI;
 if (!uri) { console.error('Set TEST_MONGODB_URI to a throwaway database.'); process.exit(2); }
 
+const http = require('http');
+const { io: connectSocket } = require('socket.io-client');
 const app = require('./app');
+const { initSocket } = require('./socket');
 const { UPLOAD_DIR } = require('./middleware/upload');
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
@@ -19,8 +22,11 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 async function main() {
   await mongoose.connect(uri);
   await mongoose.connection.dropDatabase();
-  const server = app.listen(0);
-  const base = `http://127.0.0.1:${server.address().port}/api`;
+  const server = http.createServer(app);
+  const io = initSocket(server);
+  await new Promise((ok) => server.listen(0, ok));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const base = `${origin}/api`;
   const call = async (method, url, { token, json, form } = {}) => {
     const headers = {};
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -83,8 +89,30 @@ async function main() {
   assert.strictEqual((await call('POST', `/photos/${photo._id}/comments`, { json: { comment: 'x' } })).status, 401);
   assert.strictEqual((await call('POST', `/photos/${photo._id}/comments`, { token: t2, json: { comment: '  ' } })).status, 400);
   assert.strictEqual((await call('POST', `/photos/${new mongoose.Types.ObjectId()}/comments`, { token: t2, json: { comment: 'x' } })).status, 404);
+  // --- live comments (Socket.io): only clients in this photo's room get the event
+  const viewer = connectSocket(origin, { transports: ['websocket'] });
+  const other = connectSocket(origin, { transports: ['websocket'] });
+  await Promise.all([viewer, other].map((s) => new Promise((ok) => s.once('connect', ok))));
+  viewer.emit('photo:join', String(photo._id));
+  other.emit('photo:join', String(new mongoose.Types.ObjectId()));
+  await new Promise((ok) => setTimeout(ok, 100)); // let the joins land
+  let leaked = null;
+  other.on('comment:new', (c) => { leaked = c; });
+  const live = new Promise((ok, fail) => {
+    viewer.once('comment:new', ok);
+    setTimeout(() => fail(new Error('no comment:new event')), 2000);
+  });
+
   r = await call('POST', `/photos/${photo._id}/comments`, { token: t2, json: { comment: 'Nice!' } });
   assert.strictEqual(r.status, 201);
+  const pushed = await live;
+  assert.strictEqual(pushed.comment, 'Nice!');
+  assert.strictEqual(pushed._id, r.body.comment._id);
+  assert.strictEqual(pushed.userId.firstName, 'Bob');
+  await new Promise((ok) => setTimeout(ok, 500));
+  assert.strictEqual(leaked, null, 'comment leaked to another photo room');
+  viewer.close();
+  other.close();
   r = await call('GET', `/photos/${photo._id}`);
   assert.strictEqual(r.body.comments.length, 1);
   assert.strictEqual(r.body.comments[0].userId.firstName, 'Bob');
@@ -100,6 +128,7 @@ async function main() {
 
   await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
+  io.close();
   server.close();
   console.log('selftest OK');
 }
