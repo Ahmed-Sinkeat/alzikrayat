@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Photo = require('../models/Photo');
 const Comment = require('../models/Comment');
+const { emitToPhoto } = require('../socket');
 
 // POST /api/photos/:id/comments
 async function create(req, res) {
@@ -17,6 +18,7 @@ async function create(req, res) {
     comment: req.body.comment,
   });
   await comment.populate('userId', 'firstName lastName');
+  emitToPhoto(req.params.id, 'comment:new', comment); // live update for everyone on this photo's page
   res.status(201).json({ success: true, comment });
 }
 

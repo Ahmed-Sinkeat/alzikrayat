@@ -1,6 +1,8 @@
 require('dotenv').config();
+const http = require('http');
 const mongoose = require('mongoose');
 const app = require('./app');
+const { initSocket } = require('./socket');
 
 const PORT = process.env.PORT || 5000;
 
@@ -11,7 +13,10 @@ async function start() {
   }
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('MongoDB connected');
-  app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
+  // Express and Socket.io share one HTTP server (same port)
+  const server = http.createServer(app);
+  initSocket(server);
+  server.listen(PORT, () => console.log(`API + Socket.io listening on http://localhost:${PORT}`));
 }
 
 start().catch((err) => {
